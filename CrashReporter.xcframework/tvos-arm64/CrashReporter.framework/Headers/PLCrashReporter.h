@@ -62,7 +62,7 @@ typedef void (*PLCrashReporterPostCrashSignalCallback)(siginfo_t *info, ucontext
  * @ingroup types
  *
  * This structure contains callbacks supported by PLCrashReporter to allow the host application to perform
- * additional tasks prior to program termination after a crash has occured.
+ * additional tasks prior to program termination after a crash has occurred.
  *
  * @sa The @ref async_safety documentation.
  */
@@ -142,6 +142,14 @@ typedef struct PLCrashReporterCallbacks {
 
 - (void) setCrashCallbacks: (PLCrashReporterCallbacks *) callbacks;
 
+/**
+ * Return the path to live crash report (which may not yet, or ever, exist).
+ */
+- (NSString *) crashReportPath;
+
+/**
+ * Custom data to save in the crash report.
+ */
 @property(nonatomic, strong) NSData *customData;
 
 @end

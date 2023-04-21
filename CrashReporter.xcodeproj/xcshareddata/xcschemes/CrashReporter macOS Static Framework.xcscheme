@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "058812D410405908009128FB"
-               BuildableName = "CrashReporter Archive"
-               BlueprintName = "CrashReporter Archive"
+               BlueprintIdentifier = "32CF775E26DFBB080087748A"
+               BuildableName = "CrashReporter.framework"
+               BlueprintName = "CrashReporter macOS Static Framework"
                ReferencedContainer = "container:CrashReporter.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -40,15 +40,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "058812D410405908009128FB"
-            BuildableName = "CrashReporter Archive"
-            BlueprintName = "CrashReporter Archive"
-            ReferencedContainer = "container:CrashReporter.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -59,9 +50,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "058812D410405908009128FB"
-            BuildableName = "CrashReporter Archive"
-            BlueprintName = "CrashReporter Archive"
+            BlueprintIdentifier = "32CF775E26DFBB080087748A"
+            BuildableName = "CrashReporter.framework"
+            BlueprintName = "CrashReporter macOS Static Framework"
             ReferencedContainer = "container:CrashReporter.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

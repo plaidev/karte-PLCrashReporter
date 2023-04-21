@@ -34,21 +34,16 @@
 #import "PLCrashReporter.h"
 #endif
 
+#import "PLCrashCompatConstants.h"
 #import "PLCrashFeatureConfig.h"
-
 #import "PLCrashHostInfo.h"
-
 #import "PLCrashSignalHandler.h"
 #import "PLCrashMachExceptionServer.h"
-
 #import "PLCrashFeatureConfig.h"
-
 #import "PLCrashAsync.h"
 #import "PLCrashLogWriter.h"
 #import "PLCrashFrameWalker.h"
-
 #import "PLCrashAsyncMachExceptionInfo.h"
-
 #import "PLCrashReporterNSError.h"
 
 #import <fcntl.h>
@@ -262,7 +257,7 @@ static kern_return_t mach_exception_callback (task_t task, thread_t thread, exce
     plcrash_log_signal_info_t signal_info;
     plcrash_log_bsd_signal_info_t bsd_signal_info;
     plcrash_log_mach_signal_info_t mach_signal_info;
-    plcrash_error_t err;
+    PLCF_UNUSED_IN_RELEASE plcrash_error_t err;
 
     /* Let any other registered server attempt to handle the exception */
     if (PLCrashMachExceptionForward(task, thread, exception_type, code, code_count, &sigctx->port_set) == KERN_SUCCESS)
@@ -391,7 +386,6 @@ static void uncaught_exception_handler (NSException *exception) {
 - (BOOL) populateCrashReportDirectoryAndReturnError: (NSError **) outError;
 - (NSString *) crashReportDirectory;
 - (NSString *) queuedCrashReportDirectory;
-- (NSString *) crashReportPath;
 
 @end
 
@@ -450,7 +444,6 @@ static PLCrashReporter *sharedReporter = nil;
     return [self initWithBundle: [NSBundle mainBundle] configuration: configuration];
 }
 
-
 /**
  * Returns YES if the application has previously crashed and
  * an pending crash report is available.
@@ -491,7 +484,7 @@ static PLCrashReporter *sharedReporter = nil;
  */
 - (NSData *) loadPendingCrashReportDataAndReturnError: (NSError **) outError {
     /* Load the (memory mapped) data */
-    return [NSData dataWithContentsOfFile: [self crashReportPath] options: NSMappedRead error: outError];
+    return [NSData dataWithContentsOfFile: [self crashReportPath] options: NSDataReadingMappedIfSafe error: outError];
 }
 
 
@@ -575,7 +568,7 @@ static PLCrashReporter *sharedReporter = nil;
 
     /* Check for programmer error */
     if (_enabled)
-        [NSException raise: PLCrashReporterException format: @"The crash reporter has alread been enabled"];
+        [NSException raise: PLCrashReporterException format: @"The crash reporter has already been enabled"];
 
     /* Create the directory tree */
     if (![self populateCrashReportDirectoryAndReturnError: outError])
@@ -822,7 +815,7 @@ cleanup:
     /* Check for programmer error; this should not be called after the signal handler is enabled as to ensure that
      * the signal handler can never fire with a partially initialized callback structure. */
     if (_enabled)
-        [NSException raise: PLCrashReporterException format: @"The crash reporter has alread been enabled"];
+        [NSException raise: PLCrashReporterException format: @"The crash reporter has already been enabled"];
 
     assert(callbacks->version == 0);
 
@@ -843,6 +836,10 @@ cleanup:
 - (void) setCustomData: (NSData *) customData {
     _customData = customData;
     plcrash_log_writer_set_custom_data(&signal_handler_context.writer, customData);
+}
+
+- (NSString *) crashReportPath {
+    return [[self crashReportDirectory] stringByAppendingPathComponent: PLCRASH_LIVE_CRASHREPORT];
 }
 
 @end
@@ -882,17 +879,19 @@ cleanup:
     /* No occurances of '/' should ever be in a bundle ID, but just to be safe, we escape them */
     NSString *appIdPath = [applicationIdentifier stringByReplacingOccurrencesOfString: @"/" withString: @"_"];
     
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-    NSString *cacheDir = [paths objectAtIndex: 0];
-    _crashReportDirectory = [[cacheDir stringByAppendingPathComponent: PLCRASH_CACHE_DIR] stringByAppendingPathComponent: appIdPath];
-    
+    NSString *basePath = _config.basePath;
+    if (basePath == nil) {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+        basePath = [paths objectAtIndex: 0];
+    }
+    _crashReportDirectory = [[basePath stringByAppendingPathComponent: PLCRASH_CACHE_DIR] stringByAppendingPathComponent: appIdPath];
     return self;
 }
 
 
 /**
  * @internal
- * 
+ *
  * Derive the bundle identifier and version from @a bundle.
  *
  * @param bundle The application's main bundle.
@@ -920,7 +919,7 @@ cleanup:
         PLCR_LOG("Warning -- bundle version unavailable");
         bundleVersion = @"";
     }
-    
+
     return [self initWithApplicationIdentifier: bundleIdentifier appVersion: bundleVersion appMarketingVersion:bundleMarketingVersion configuration: configuration];
 }
 
@@ -1059,15 +1058,5 @@ cleanup:
 - (NSString *) queuedCrashReportDirectory {
     return [[self crashReportDirectory] stringByAppendingPathComponent: PLCRASH_QUEUED_DIR];
 }
-
-
-/**
- * Return the path to live crash report (which may not yet, or ever, exist).
- */
-- (NSString *) crashReportPath {
-    return [[self crashReportDirectory] stringByAppendingPathComponent: PLCRASH_LIVE_CRASHREPORT];
-}
-
-
 
 @end

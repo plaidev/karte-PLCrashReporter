@@ -90,7 +90,7 @@ plframe_error_t plframe_cursor_read_compact_unwind (task_t task,
     if (err != PLCRASH_ESUCCESS) {
         PLCF_DEBUG("Could not parse the compact unwind info section for image '%s': %d", image->macho_image.name, err);
         result = PLFRAME_EINVAL;
-        goto cleanup;
+        goto cleanup_mobject;
     }
 
     /* Find the encoding entry (if any) and free the reader */
@@ -101,7 +101,7 @@ plframe_error_t plframe_cursor_read_compact_unwind (task_t task,
     if (err != PLCRASH_ESUCCESS) {
         PLCF_DEBUG("Did not find CFE entry for PC 0x%" PRIx64 ": %d", (uint64_t) pc, err);
         result = PLFRAME_ENOTSUP;
-        goto cleanup;
+        goto cleanup_mobject;
     }
     
     /* Decode the entry */
@@ -110,15 +110,13 @@ plframe_error_t plframe_cursor_read_compact_unwind (task_t task,
     if (err != PLCRASH_ESUCCESS) {
         PLCF_DEBUG("Could not decode CFE encoding 0x%" PRIx32 " for PC 0x%" PRIx64 ": %d", encoding, (uint64_t) pc, err);
         result = PLFRAME_ENOTSUP;
-        goto cleanup;
+        goto cleanup_mobject;
     }
 
     /* Skip entries for which no unwind information is unavailable */
     if (plcrash_async_cfe_entry_type(&entry) == PLCRASH_ASYNC_CFE_ENTRY_TYPE_NONE) {
         result = PLFRAME_ENOFRAME;
-
-        plcrash_async_cfe_entry_free(&entry);
-        goto cleanup;
+        goto cleanup_cfe_entry;
     }
     
     /* Compute the in-core function address */
@@ -127,21 +125,22 @@ plframe_error_t plframe_cursor_read_compact_unwind (task_t task,
         PLCF_DEBUG("The provided function base (0x%" PRIx64 ") plus header address (0x%" PRIx64 ") will overflow pl_vm_address_t",
                    (uint64_t) function_base, (uint64_t) image->macho_image.header_addr);
         result = PLFRAME_EINVAL;
-
-        plcrash_async_cfe_entry_free(&entry);
-        goto cleanup;
+        goto cleanup_cfe_entry;
     }
 
     /* Apply the frame delta -- this may fail. */
-    if ((err = plcrash_async_cfe_entry_apply(task, function_address, &current_frame->thread_state, &entry, &next_frame->thread_state)) == PLCRASH_ESUCCESS) {
+    PLCF_UNUSED_IN_RELEASE plcrash_error_t debugError;
+    if ((debugError = plcrash_async_cfe_entry_apply(task, function_address, &current_frame->thread_state, &entry, &next_frame->thread_state)) == PLCRASH_ESUCCESS) {
         result = PLFRAME_ESUCCESS;
     } else {
-        PLCF_DEBUG("Failed to apply CFE encoding 0x%" PRIx32 " for PC 0x%" PRIx64 ": %d", encoding, (uint64_t) pc, err);
+        PLCF_DEBUG("Failed to apply CFE encoding 0x%" PRIx32 " for PC 0x%" PRIx64 ": %d", encoding, (uint64_t) pc, debugError);
         result = PLFRAME_ENOFRAME;
     }
 
+cleanup_cfe_entry:
     plcrash_async_cfe_entry_free(&entry);
-
+cleanup_mobject:
+    plcrash_async_mobject_free(&unwind_mobj);
 cleanup:
     plcrash_async_image_list_set_reading(image_list, false);
     return result;

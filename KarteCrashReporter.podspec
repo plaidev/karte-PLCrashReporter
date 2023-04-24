@@ -7,6 +7,7 @@
 #
 
 Pod::Spec.new do |spec|
+  spec.cocoapods_version = ">= 1.10"
   spec.name         = "KarteCrashReporter"
   spec.version      = "1.9.0"
   spec.summary      = "Fork of the Plausible Labs PLCrashReporter repo."

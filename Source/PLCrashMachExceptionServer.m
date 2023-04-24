@@ -26,7 +26,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "PLCrashFeatureConfig.h"
+#import "PLCrashCompatConstants.h"
+#import "PLCrashFeatureConfig.h"
 #import "PLCrashMachExceptionPort.h"
 
 #if PLCRASH_FEATURE_MACH_EXCEPTIONS
@@ -531,6 +532,15 @@ kern_return_t PLCrashMachExceptionForward (task_t task,
                                            mach_msg_type_number_t code_count,
                                            plcrash_mach_exception_port_set_t *port_state)
 {
+#pragma clang diagnostic push
+/**
+ * Disable uninitialized variable warnings for `behavior`, `flavor`, `port` and `thread_state_count` which will be triggered 
+ * if the build setting for Uninitialized Variables Warning is Yes (Aggressive)
+ * behavior, flavor and port can be seen to be either initialized in the loop (found -> true) or the function will exit (found -> false)
+ * thread_state_count will be initialized for all cases except behavior == EXCEPTION_DEFAULT, in which case the thread_state_count is not used in the `switch (behavior)` block
+ */
+#pragma clang diagnostic ignored "-Wconditional-uninitialized"
+
     exception_behavior_t behavior;
     thread_state_flavor_t flavor;
     mach_port_t port;
@@ -630,6 +640,7 @@ kern_return_t PLCrashMachExceptionForward (task_t task,
     
     PLCF_DEBUG("Unsupported exception behavior: 0x%x (MACH_EXCEPTION_CODES=%s)", behavior, mach_exc_codes ? "true" : "false");
     return KERN_FAILURE;
+#pragma clang diagnostic pop
 }
 
 

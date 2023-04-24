@@ -5,9 +5,9 @@ import PackageDescription
 let package = Package(
     name: "PLCrashReporter",
     platforms: [
-        .iOS(.v9),
+        .iOS(.v11),
         .macOS(.v10_10),
-        .tvOS(.v9)
+        .tvOS(.v11)
     ],
     products: [
         .library(name: "PLCrashReporter", targets: ["CrashReporter"])
@@ -16,7 +16,7 @@ let package = Package(
         .binaryTarget(
             name: "CrashReporter",
             url: "https://sdk.karte.io/ios/swiftpm/CrashReporter-1.11.0/CrashReporter.xcframework.zip",
-            checksum: "a5469989e958f9e28e6278eef5dfa468504a29d30124f60ced5bd273a4ef58f8"
+            checksum: "533796f22a31a418d63b719bfba092569f50c81bbc288e9fd3549c3f6c695c5b"
         ),
     ]
 )
